@@ -4,6 +4,7 @@ import mx.edu.utez.automoviles.modules.employee.dto.EmployeeDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -12,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/employees")
+@RequestMapping("api/employees")
 public class EmployeeController {
 
     @Autowired
@@ -20,12 +21,14 @@ public class EmployeeController {
 
     // Obtener todos los empleados
     @GetMapping
+    @CrossOrigin(origins = "*")
     public List<EmployeeDTO> getAllEmployees() {
         return employeeService.getAllEmployees();
     }
 
     // Obtener un empleado por ID
     @GetMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> getEmployeeById(@PathVariable long id) {
         Optional<EmployeeDTO> employeeDTO = employeeService.getEmployeeById(id);
 
@@ -40,6 +43,7 @@ public class EmployeeController {
 
     // Crear un nuevo empleado
     @PostMapping
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> addEmployee(@RequestBody EmployeeDTO employeeDTO) {
         try {
             EmployeeDTO savedEmployee = employeeService.saveEmployee(employeeDTO);
@@ -51,6 +55,7 @@ public class EmployeeController {
 
     // Actualizar un empleado
     @PutMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeDTO employeeDetails) {
         try {
             EmployeeDTO updatedEmployee = employeeService.updateEmployee(id, employeeDetails);
@@ -62,6 +67,7 @@ public class EmployeeController {
 
     // Eliminar un empleado
     @DeleteMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> deleteEmployee(@PathVariable Long id) {
         try {
             employeeService.deleteEmployee(id);

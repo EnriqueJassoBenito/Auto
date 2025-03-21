@@ -2,7 +2,6 @@ package mx.edu.utez.automoviles.modules.car;
 
 import jakarta.validation.Valid;
 import mx.edu.utez.automoviles.modules.car.dto.CarDTO;
-import mx.edu.utez.automoviles.modules.customer.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/cars")
+@RequestMapping("api/cars")
 public class CarController {
 
     @Autowired
@@ -27,6 +26,7 @@ public class CarController {
 
 
     @GetMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> getCarById(@PathVariable long id) {
         Optional<CarDTO> carDTO = carService.getCarById(id);
 
@@ -41,6 +41,7 @@ public class CarController {
 
 
     @PostMapping
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> addCar(@Valid @RequestBody CarDTO carDTO) {
         try {
             CarDTO savedCar = carService.saveCar(carDTO);
@@ -52,6 +53,7 @@ public class CarController {
 
     // Actualizar un auto
     @PutMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> updateCar(@PathVariable Long id, @Valid @RequestBody CarDTO carDTO) {
         try {
             CarDTO updatedCar = carService.updateCar(id, carDTO)
@@ -65,6 +67,7 @@ public class CarController {
 
     // Eliminar un auto
     @DeleteMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> deleteCar(@PathVariable Long id) {
         if (carService.deleteCar(id)) {
             return ResponseEntity.ok("Auto eliminado correctamente");

@@ -12,18 +12,20 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/car_has_services")
+@RequestMapping("api/car_has_services")
 public class CarHasServiceController {
 
     @Autowired
     private CarHasServiceService carHasServiceService;
 
     @GetMapping
+    @CrossOrigin(origins = "*")
     public List<CarHasServiceDTO> getAllCarHasServices() {
         return carHasServiceService.getAllCarHasServices();
     }
 
     @GetMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> getCarHasServiceById(@PathVariable long id) {
         Optional<CarHasServiceDTO> carHasServiceDTO = carHasServiceService.getCarHasServiceById(id);
 
@@ -37,6 +39,7 @@ public class CarHasServiceController {
     }
 
     @PostMapping
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> addCarHasService(@RequestBody CarHasServiceDTO carHasServiceDTO) {
         try {
             CarHasServiceDTO savedCarHasServiceDTO = carHasServiceService.saveCarHasService(carHasServiceDTO);
@@ -47,6 +50,7 @@ public class CarHasServiceController {
     }
 
     @DeleteMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> deleteCarHasService(@PathVariable Long id) {
         try {
             carHasServiceService.deleteCarHasService(id);

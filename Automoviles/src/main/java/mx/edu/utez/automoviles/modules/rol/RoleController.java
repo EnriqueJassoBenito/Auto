@@ -12,18 +12,20 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("api/roles")
 public class RoleController {
 
     @Autowired
     private RoleService roleService;
 
     @GetMapping
+    @CrossOrigin(origins = "*")
     public List<RoleDTO> getAllRoles() {
         return roleService.getAllRoles();
     }
 
     @GetMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> getRoleById(@PathVariable Long id) {
         Optional<RoleDTO> roleDTO = roleService.getRoleById(id);
 
@@ -37,6 +39,7 @@ public class RoleController {
     }
 
     @PostMapping
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> addRole(@RequestBody RoleDTO roleDTO) {
         try {
             RoleDTO savedRole = roleService.saveRole(roleDTO);
@@ -47,6 +50,7 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> updateRole(@PathVariable Long id, @RequestBody RoleDTO roleDetails) {
         try {
             RoleDTO updatedRole = roleService.updateRole(id, roleDetails);
@@ -57,6 +61,7 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<?> deleteRole(@PathVariable Long id) {
         try {
             roleService.deleteRole(id);

@@ -14,34 +14,33 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/brands")
+@RequestMapping("api/brands")
 public class BrandController {
 
     @Autowired
     private BrandService brandService;
 
-
     @GetMapping
+    @CrossOrigin(origins = "*") // CORS para GET
     public ResponseEntity<List<BrandDTO>> getAllBrands() {
         return ResponseEntity.ok(brandService.getAllBrands());
     }
 
-
     @GetMapping("/{id}")
+    @CrossOrigin(origins = "*") // CORS para GET por ID
     public ResponseEntity<?> getBrandById(@PathVariable Long id) {
         Optional<BrandDTO> brandDTO = brandService.getBrandById(id);
         if (brandDTO.isPresent()) {
             return ResponseEntity.ok(brandDTO.get());
         } else {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Marca no encontrado");
+            error.put("error", "Marca no encontrada");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
-
     }
 
-
-    @PostMapping("/")
+    @PostMapping
+    @CrossOrigin(origins = "*") // CORS para POST
     public ResponseEntity<?> addBrand(@Valid @RequestBody BrandDTO brandDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             // Manejo de errores de validación
@@ -55,19 +54,16 @@ public class BrandController {
         }
     }
 
-
     @PutMapping("/{id}")
-    public ResponseEntity<BrandDTO> updateBrand(@PathVariable long id, @Valid @RequestBody BrandDTO brandDTO) {
+    @CrossOrigin(origins = "*") // CORS para PUT
+    public ResponseEntity<?> updateBrand(@PathVariable long id, @Valid @RequestBody BrandDTO brandDTO) {
         return brandService.updateBrand(id, brandDTO)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body((BrandDTO) Map.of("error", "Marca no encontrada")));
     }
 
-
-
-
-
     @DeleteMapping("/{id}")
+    @CrossOrigin(origins = "*") // CORS para DELETE
     public ResponseEntity<?> deleteBrand(@PathVariable Long id) {
         if (brandService.deleteBrand(id)) {
             return ResponseEntity.ok("Marca eliminada correctamente");
