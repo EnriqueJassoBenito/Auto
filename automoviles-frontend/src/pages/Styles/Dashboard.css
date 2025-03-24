@@ -1,0 +1,51 @@
+/* Dashboard.css */
+.dashboard-container {
+    padding-top: 2rem;
+    animation: fadeIn 1s ease-in-out;
+  }
+  
+  .dashboard-title {
+    font-size: 2.5rem;
+    text-align: center;
+    color: #333;
+    animation: slideIn 0.5s ease-in-out;
+  }
+  
+  .dashboard-subtitle {
+    font-size: 1.2rem;
+    text-align: center;
+    color: #666;
+    animation: slideIn 0.7s ease-in-out;
+  }
+  
+  .dashboard-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-10px); /* Efecto de levantar */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }

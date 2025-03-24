@@ -26,8 +26,13 @@ public class AuthService {
         Optional<Employee> found = employeeRepository.findByUsernameAndPassword(dto.getUsername(), dto.getPassword());
 
         if (found.isPresent()) {
-            // Si se encuentra el empleado, generamos un token simple
-            return customResponse.getOkResponse("tokenbearer." + found.get().getUsername() + ".voidtoken");
+            Employee employee = found.get();
+            // Generamos un token que incluye el id, username y rol del empleado
+            String token = String.format("tokenbearer.%d.%s.%s.voidtoken",
+                    employee.getId(),
+                    employee.getUsername(),
+                    employee.getRole().getName());
+            return customResponse.getOkResponse(token);
         } else {
             // Si no se encuentra, devolvemos un error 404
             return customResponse.get400Response(404);

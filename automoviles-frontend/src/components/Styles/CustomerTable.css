@@ -1,0 +1,36 @@
+/* CustomerTable.css */
+.customer-table {
+    margin-top: 2rem;
+    animation: fadeIn 1s ease-in-out;
+  }
+  
+  .customer-row {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .customer-row:hover {
+    transform: translateY(-5px); /* Efecto de levantar */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .action-button {
+    margin: 0 5px;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+  }
+  
+  .action-button:hover {
+    transform: scale(1.5); /* Efecto de agrandar */
+  }
+  
+  .action-button:active {
+    transform: scale(0.9); /* Efecto de presionar */
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }

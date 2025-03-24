@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -32,7 +33,8 @@ public class MainSecurity implements WebMvcConfigurer {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()).cors(cors -> cors.disable())
+        http.csrf(csrf -> csrf.disable()) // Desactiva CSRF
+                .cors(cors -> cors.configure(http)) // Habilita CORS
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll() // Rutas públicas
                         .requestMatchers("/api/brands/**").hasRole("ADMIN") // Solo ADMIN
@@ -46,6 +48,15 @@ public class MainSecurity implements WebMvcConfigurer {
                 ).addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**") // Permite CORS en todas las rutas
+                .allowedOrigins("http://localhost:5173") // Origen permitido (tu frontend)
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Métodos HTTP permitidos
+                .allowedHeaders("*") // Headers permitidos
+                .allowCredentials(true); // Permite el envío de credenciales (cookies, tokens)
     }
 
     @Override
