@@ -38,7 +38,7 @@ const Login = () => {
           showConfirmButton: false,
         }).then(() => {
           // Redirigir al usuario a la página principal
-          navigate('/dashboard'); // Cambia '/dashboard' por la ruta que desees
+          navigate('/dashboard/customers'); // Cambia '/dashboard' por la ruta que desees
         });
       } else {
         // Manejar el caso en que la respuesta no tiene el formato esperado

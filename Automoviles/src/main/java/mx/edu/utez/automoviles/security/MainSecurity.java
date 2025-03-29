@@ -9,9 +9,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.Arrays;
+import java.util.List;
 
 @EnableWebSecurity
 @Configuration
@@ -23,8 +28,13 @@ public class MainSecurity implements WebMvcConfigurer {
     @Autowired
     private CustomInterceptor customInterceptor;
 
-    private final static String[] WHITE_LIST = {
-            "/api/auth/login"
+    // Lista blanca de endpoints públicos
+    private static final String[] WHITE_LIST = {
+            "/api/auth/login",
+            "/api/auth/register", // Si tienes registro
+            "/swagger-ui/**",     // Documentación Swagger
+            "/v3/api-docs/**",    // OpenAPI
+            "/error"              // Manejo de errores
     };
 
     public static String[] getWHITE_LIST() {
@@ -33,34 +43,52 @@ public class MainSecurity implements WebMvcConfigurer {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()) // Desactiva CSRF
-                .cors(cors -> cors.configure(http)) // Habilita CORS
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(WHITE_LIST).permitAll() // Rutas públicas
-                        .requestMatchers("/api/brands/**").hasRole("ADMIN") // Solo ADMIN
-                        .requestMatchers("/api/cars/**").hasRole("ADMIN") // Solo ADMIN
-                        .requestMatchers("/api/car_has_services/**").hasRole("ADMIN") // Solo ADMIN
-                        .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "EMPLEADO") // ADMIN o EMPLEADO
-                        .requestMatchers("/api/employees/**").hasRole("ADMIN") // Solo ADMIN
-                        .requestMatchers("/api/roles/**").hasRole("ADMIN") // Solo ADMIN
-                        .requestMatchers("/api/services/**").hasRole("ADMIN") // Solo ADMIN
-                        .anyRequest().authenticated() // Cualquier otra ruta requiere autenticación
-                ).addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
+                        .requestMatchers(WHITE_LIST).permitAll()
+                        // Rutas de administración (solo ADMIN)
+                        .requestMatchers(
+                                "/api/brands/**",
+                                "/api/cars/**",
+                                "/api/car_has_services/**",
+                                "/api/employees/**",
+                                "/api/roles/**",
+                                "/api/services/**"
+                        ).hasRole("ADMIN")
+                        // Rutas para empleados (ADMIN o EMPLEADO)
+                        .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "EMPLEADO")
+                        // Todas las demás rutas requieren autenticación
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // Permite CORS en todas las rutas
-                .allowedOrigins("http://localhost:5173") // Origen permitido (tu frontend)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Métodos HTTP permitidos
-                .allowedHeaders("*") // Headers permitidos
-                .allowCredentials(true); // Permite el envío de credenciales (cookies, tokens)
+    // Configuración CORS centralizada
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",  // Frontend local
+                "https://tudominio.com"  // Producción
+        ));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setMaxAge(3600L); // Cache de 1 hora
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
+    // Interceptores personalizados (opcional)
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(customInterceptor).addPathPatterns("/api/test/**");
+        registry.addInterceptor(customInterceptor)
+                .addPathPatterns("/api/test/**");
     }
 }

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons'; // Icono de añadir
+import { faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import CustomerForm from '../components/CustomerForm';
 import CustomerTable from '../components/CustomerTable';
-import Alert from '../components/Alert'; // Importar la función Alert
+import Alert from '../components/Alert';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [formKey, setFormKey] = useState(0); // Clave para resetear el formulario
 
   // Obtener el token del localStorage
   const getToken = () => {
@@ -19,18 +20,18 @@ const Customers = () => {
       Alert('Error', 'No se encontró el token de autenticación', 'error');
       return null;
     }
-    return `Bearer ${token}`; // Agregar el prefijo "Bearer"
+    return `Bearer ${token}`;
   };
 
-  // Configurar axios para incluir el token en las solicitudes
+  // Configurar axios
   const axiosWithToken = axios.create({
     baseURL: 'http://localhost:8080/api',
     headers: {
-      Authorization: getToken(), // Incluir el token en el header
+      Authorization: getToken(),
     },
   });
 
-  // Obtener la lista de clientes
+  // Obtener clientes
   const fetchCustomers = async () => {
     try {
       const response = await axiosWithToken.get('/customers');
@@ -44,36 +45,36 @@ const Customers = () => {
     fetchCustomers();
   }, []);
 
-  // Función para extraer el id, username y rol del token
+  // Extraer info del token
   const getEmployeeInfoFromToken = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
 
-    // Dividir el token en partes
-    const parts = token.split('.');
-    if (parts.length >= 4) {
+    const cleanToken = token.replace('Bearer ', '').trim();
+    const parts = cleanToken.split('.');
+    
+    if (parts.length === 3) {
       return {
-        id: parts[1],       // El id está en la segunda parte
-        username: parts[2], // El username está en la tercera parte
-        role: parts[3],     // El rol está en la cuarta parte
+        id: parts[0],
+        username: parts[1],
+        role: parts[2]
       };
     }
     return null;
   };
 
-  // Agregar o editar un cliente
+  // Manejar submit del formulario
   const handleSubmit = async (data) => {
     try {
       const employeeInfo = getEmployeeInfoFromToken();
       if (!employeeInfo) {
-        Alert('Error', 'No se pudo obtener la información del empleado desde el token', 'error');
+        Alert('Error', 'No se pudo obtener la información del empleado', 'error');
         return;
       }
 
-      // Agregar el employeeId al cuerpo de la solicitud
       const requestData = {
         ...data,
-        employeeId: employeeInfo.id, // Usar el id extraído del token
+        employeeId: employeeInfo.id,
       };
 
       if (selectedCustomer) {
@@ -83,20 +84,24 @@ const Customers = () => {
         await axiosWithToken.post('/customers', requestData);
         Alert('Éxito', 'Cliente agregado correctamente', 'success');
       }
+
       fetchCustomers();
+      setSelectedCustomer(null);
+      setFormKey(prevKey => prevKey + 1); // Forzar reset del formulario
+      setShowForm(false);
     } catch (error) {
       Alert('Error', 'No se pudo guardar el cliente', 'error');
     }
   };
 
-  // Eliminar un cliente
+  // Eliminar cliente
   const handleDelete = async (id) => {
     try {
       const result = await Alert(
         'Confirmar Eliminación',
-        '¿Estás seguro de que deseas eliminar este cliente?',
+        '¿Estás seguro de eliminar este cliente?',
         'warning',
-        true // Agregar un parámetro para mostrar botones de confirmación
+        true
       );
 
       if (result.isConfirmed) {
@@ -114,18 +119,21 @@ const Customers = () => {
       <h1>Gestión de Clientes</h1>
       <Button
         variant="dark"
-        onClick={() => setShowForm(true)}
+        onClick={() => {
+          setSelectedCustomer(null);
+          setShowForm(true);
+        }}
         style={{
           marginBottom: '2px',
           marginTop: '10px',
           transition: 'transform 0.3s ease, background-color 0.3s ease',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.5)')}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.2)')}
         onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.9)')}
         onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
       >
-        <FontAwesomeIcon icon={faPlus} /> {/* Icono de añadir */}
+       Añadir nuevo cliente <FontAwesomeIcon icon={faUserPlus} />
       </Button>
       <CustomerTable
         customers={customers}
@@ -133,9 +141,10 @@ const Customers = () => {
           setSelectedCustomer(customer);
           setShowForm(true);
         }}
-        onDelete={handleDelete} // Usar la función handleDelete
+        onDelete={handleDelete}
       />
       <CustomerForm
+        key={formKey} // Key para resetear el componente
         show={showForm}
         onHide={() => {
           setShowForm(false);

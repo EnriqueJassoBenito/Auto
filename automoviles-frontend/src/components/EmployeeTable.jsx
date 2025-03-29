@@ -17,13 +17,16 @@ import {
   faAnglesRight
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import './Styles/CustomerTable.css';
+import './Styles/EmployeeTable.css';
 
-const CustomerTable = ({ customers, onEdit, onDelete }) => {
+const EmployeeTable = ({ employees, getRoleNameById, onEdit, onDelete }) => {
   const [globalFilter, setGlobalFilter] = useState('');
 
-  // Definición de columnas
   const columns = [
+    {
+      header: 'Nombre de Usuario',
+      accessorKey: 'username',
+    },
     {
       header: 'Nombre',
       accessorKey: 'name',
@@ -33,12 +36,8 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
       accessorKey: 'surname',
     },
     {
-      header: 'Teléfono',
-      accessorKey: 'phone',
-    },
-    {
-      header: 'Correo Electrónico',
-      accessorKey: 'email',
+      header: 'Rol',
+      cell: ({ row }) => getRoleNameById(row.original.roleId),
     },
     {
       header: 'Acciones',
@@ -65,9 +64,8 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
     },
   ];
 
-  // Configuración de la tabla
   const table = useReactTable({
-    data: customers,
+    data: employees,
     columns,
     state: {
       globalFilter,
@@ -85,7 +83,6 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
 
   return (
     <div className="table-responsive-container">
-      {/* Barra de búsqueda */}
       <div className="search-container mb-3">
         <InputGroup>
           <InputGroup.Text>
@@ -93,7 +90,7 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
           </InputGroup.Text>
           <Form.Control
             type="text"
-            placeholder="Buscar en todos los campos..."
+            placeholder="Buscar empleados..."
             value={globalFilter ?? ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="search-input"
@@ -101,9 +98,8 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
         </InputGroup>
       </div>
 
-      {/* Tabla */}
       <div className="table-container">
-        <table className="customer-table">
+        <table className="employee-table">
           <thead>
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
@@ -120,7 +116,7 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
           </thead>
           <tbody>
             {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="customer-row">
+              <tr key={row.id} className="employee-row">
                 {row.getVisibleCells().map(cell => (
                   <td key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -132,7 +128,6 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
         </table>
       </div>
 
-      {/* Controles de paginación */}
       <div className="pagination-controls">
         <div className="pagination-buttons">
           <Button
@@ -163,7 +158,7 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
           </span>
           <span className="mx-2">|</span>
           <span>
-            Registros: <strong>{customers.length}</strong>
+            Registros: <strong>{employees.length}</strong>
           </span>
         </div>
 
@@ -206,4 +201,4 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
   );
 };
 
-export default CustomerTable;
+export default EmployeeTable;

@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import mx.edu.utez.automoviles.modules.employee.Employee;
 import mx.edu.utez.automoviles.modules.employee.EmployeeRepository;
 import mx.edu.utez.automoviles.security.MainSecurity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,85 +15,89 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 @Component
 public class AuthFilter extends OncePerRequestFilter {
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    private final EmployeeRepository employeeRepository;
+    private final Set<String> whiteList;
 
-    Set<String> whiteList = Arrays.stream(MainSecurity.getWHITE_LIST()).collect(Collectors.toSet());
+    public AuthFilter(EmployeeRepository employeeRepository) {
+        this.employeeRepository = employeeRepository;
+        this.whiteList = Arrays.stream(MainSecurity.getWHITE_LIST())
+                .collect(Collectors.toSet());
+    }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
-        String token;
-        Employee employee = null;
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        if (!whiteList.contains(request.getRequestURI())) {
-
-            System.out.println("MÉTODO DE LA SOLICITUD: " + request.getMethod());
-            System.out.println("RUTA SOLICITADA: " + request.getRequestURI());
-            System.out.println("VERIFICANDO LOS HEADERS DE LA PETICIÓN");
-
-            if (authHeader != null && authHeader.startsWith("Bearer")) {
-                token = authHeader.substring(7); // Eliminar "Bearer " del token
-
-                // Extraer las partes del token
-                String[] tokenParts = token.split("\\.");
-                if (tokenParts.length >= 4) { // Verificar que el token tenga el formato correcto
-                    String id = tokenParts[1];       // El id está en la segunda parte
-                    String username = tokenParts[2]; // El username está en la tercera parte
-                    String role = tokenParts[3];    // El rol está en la cuarta parte
-
-                    System.out.println("VERIFICANDO QUE EL EMPLEADO EXISTA Y QUE EL TOKEN SEA VÁLIDO");
-
-                    // Buscar el empleado por username
-                    employee = employeeRepository.findByUsername(username).orElse(null);
-
-                    if (employee != null && token != null) {
-                        // Verificar que el id y el rol coincidan con los del empleado
-                        if (String.valueOf(employee.getId()).equals(id) && employee.getRole().getName().equals(role)) {
-                            System.out.println("ROL DEL USUARIO: " + role);
-
-                            // Asignar el rol al contexto de seguridad
-                            List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
-                            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(employee.getUsername(), null, authorities);
-                            SecurityContextHolder.getContext().setAuthentication(authToken);
-
-                            System.out.println("TOKEN VERIFICADO");
-                            System.out.println("USUARIO AUTENTICADO: " + employee.getUsername() + " CON ROL: " + role);
-                        } else {
-                            System.out.println("EL TOKEN NO COINCIDE CON EL EMPLEADO");
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "EL TOKEN NO ES VÁLIDO");
-                            return;
-                        }
-                    } else {
-                        System.out.println("EL EMPLEADO NO EXISTE");
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND, "EL EMPLEADO NO EXISTE");
-                        return;
-                    }
-                } else {
-                    System.out.println("EL TOKEN NO TIENE EL FORMATO CORRECTO");
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "EL TOKEN NO ES VÁLIDO");
-                    return;
-                }
-            } else {
-                System.out.println("EL USUARIO NO TIENE AUTORIZACIÓN");
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "NO TIENES AUTORIZACIÓN");
-                return;
-            }
-
-        } else {
-            System.out.println("EL FILTRO SE EJECUTÓ EN MODO BYPASS");
+        // 1. Si la ruta está en la WHITE_LIST, ignorar el filtro
+        if (whiteList.contains(request.getRequestURI())) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        filterChain.doFilter(request, response);
+        // 2. Verificar el header Authorization
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            sendError(response, "Token no proporcionado", HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
 
-        System.out.println("CIERRE DEL FILTRO AUTHFILTER");
+        // 3. Extraer y normalizar el token
+        String token = authHeader.substring(7).trim(); // Elimina "Bearer " y espacios
+        String[] tokenParts = token.split("\\.");
+
+        // 4. Validar formato del token (debe ser: id.username.rol)
+        if (tokenParts.length != 3) {  // Cambiado de 4 a 3 partes
+            sendError(response, "Formato de token inválido. Debe ser: id.username.rol", HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        String id = tokenParts[0];      // Primera parte: id (antes era [1])
+        String username = tokenParts[1]; // Segunda parte: username (antes era [2])
+        String role = tokenParts[2];    // Tercera parte: rol (antes era [3])
+
+        // 5. Buscar empleado en la base de datos
+        Employee employee = employeeRepository.findByUsername(username)
+                .orElse(null);
+
+        if (employee == null || !String.valueOf(employee.getId()).equals(id)) {
+            sendError(response, "Credenciales inválidas", HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        // 6. Verificar rol (opcional, si quieres validar contra la BD)
+        if (!employee.getRole().getName().equalsIgnoreCase(role)) {
+            sendError(response, "Rol no coincide", HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        // 7. Establecer autenticación en el contexto de seguridad
+        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                username,
+                null,
+                Collections.singletonList(authority)
+        );
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+
+        // 8. Continuar con la cadena de filtros
+        filterChain.doFilter(request, response);
+    }
+
+    private void sendError(HttpServletResponse response, String message, int status) throws IOException {
+        response.setContentType("application/json");
+        response.setStatus(status);
+        response.getWriter().write(
+                String.format("{\"error\": \"%s\", \"status\": %d}", message, status)
+        );
     }
 }

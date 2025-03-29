@@ -2,77 +2,193 @@ package mx.edu.utez.automoviles.modules.car;
 
 import jakarta.validation.Valid;
 import mx.edu.utez.automoviles.modules.car.dto.CarDTO;
-import org.springframework.beans.factory.annotation.Autowired;
+import mx.edu.utez.automoviles.modules.car.dto.CarStatusDTO;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("api/cars")
+@RequestMapping("/api/cars")
+@CrossOrigin(origins = "*")
 public class CarController {
+    private final CarService carService;
+    private final FileStorageService fileStorageService;
 
-    @Autowired
-    private CarService carService;
-
-    @GetMapping
-    public ResponseEntity<List<CarDTO>> getAllCars() {
-        return ResponseEntity.ok(carService.getAllCars());
+    public CarController(CarService carService, FileStorageService fileStorageService) {
+        this.carService = carService;
+        this.fileStorageService = fileStorageService;
     }
 
+    // Métodos CRUD completos
+    @GetMapping
+    public ResponseEntity<List<CarDTO>> getAll() {
+        return ResponseEntity.ok(carService.findAll());
+    }
 
     @GetMapping("/{id}")
-    @CrossOrigin(origins = "*")
-    public ResponseEntity<?> getCarById(@PathVariable long id) {
-        Optional<CarDTO> carDTO = carService.getCarById(id);
-
-        if (carDTO.isPresent()) {
-            return ResponseEntity.ok(carDTO.get());
-        } else {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Car no encontrado");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        try {
+            Optional<CarDTO> car = carService.findById(id);
+            if (car.isPresent()) {
+                return ResponseEntity.ok(car.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of(
+                                "status", HttpStatus.NOT_FOUND.value(),
+                                "error", "Not Found",
+                                "message", "El auto con ID " + id + " no fue encontrado",
+                                "timestamp", LocalDateTime.now()
+                        ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "error", "Internal Server Error",
+                            "message", "Ocurrió un error al procesar la solicitud",
+                            "timestamp", LocalDateTime.now()
+                    ));
         }
     }
-
 
     @PostMapping
-    @CrossOrigin(origins = "*")
-    public ResponseEntity<?> addCar(@Valid @RequestBody CarDTO carDTO) {
+    public ResponseEntity<?> create(@Valid @RequestBody CarDTO carDTO) {
         try {
-            CarDTO savedCar = carService.saveCar(carDTO);
+            CarDTO savedCar = carService.save(carDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedCar);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Actualizar un auto
     @PutMapping("/{id}")
-    @CrossOrigin(origins = "*")
-    public ResponseEntity<?> updateCar(@PathVariable Long id, @Valid @RequestBody CarDTO carDTO) {
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody CarDTO carDTO) {
         try {
-            CarDTO updatedCar = carService.updateCar(id, carDTO)
-                    .orElseThrow(() -> new RuntimeException("Auto no encontrado"));
-            return ResponseEntity.ok(updatedCar);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.ok(carService.update(id, carDTO));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-
-    // Eliminar un auto
     @DeleteMapping("/{id}")
-    @CrossOrigin(origins = "*")
-    public ResponseEntity<?> deleteCar(@PathVariable Long id) {
-        if (carService.deleteCar(id)) {
-            return ResponseEntity.ok("Auto eliminado correctamente");
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
+            carService.deleteById(id);
+            return ResponseEntity.ok(Map.of("message", "Auto eliminado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Auto no encontrado");
     }
 
+    // Métodos de operaciones especiales
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<?> assignCustomer(
+            @PathVariable Long id,
+            @RequestParam Long customerId) {
+        try {
+            return ResponseEntity.ok(carService.assignCustomer(id, customerId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody CarStatusDTO statusDTO) {
+        try {
+            return ResponseEntity.ok(carService.updateStatus(id, statusDTO.getStatus()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<List<CarDTO>> getAvailableCars() {
+        return ResponseEntity.ok(carService.findByStatus("DISPONIBLE"));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<CarDTO>> getByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(carService.findByStatus(status));
+    }
+
+    // Métodos de manejo de imágenes
+    @PostMapping("/{id}/image")
+    public ResponseEntity<?> uploadImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "El archivo está vacío"));
+            }
+
+            String filename = fileStorageService.storeFile(file);
+            CarDTO updatedCar = carService.updateImage(id, filename);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Imagen subida correctamente",
+                    "filename", filename,
+                    "imageUrl", "/api/cars/" + id + "/image",
+                    "car", updatedCar
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "error", "Error al subir imagen",
+                            "details", e.getMessage()
+                    ));
+        }
+    }
+
+
+    @GetMapping("/{id}/image")
+    public ResponseEntity<Resource> serveImage(@PathVariable Long id) {
+        try {
+            String filename = carService.getImageFilename(id);
+            Resource file = fileStorageService.loadFileAsResource(filename);
+
+            String contentType = Files.probeContentType(file.getFile().toPath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + file.getFilename() + "\"")
+                    .body(file);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}/image")
+    public ResponseEntity<?> deleteImage(@PathVariable Long id) {
+        try {
+            String filename = carService.getImageFilename(id);
+            fileStorageService.deleteFile(filename);
+            carService.updateImage(id, null);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Imagen eliminada correctamente",
+                    "carId", id
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Error al eliminar imagen",
+                    "details", e.getMessage()
+            ));
+        }
+    }
 }

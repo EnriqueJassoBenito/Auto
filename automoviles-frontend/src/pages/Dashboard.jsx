@@ -9,8 +9,6 @@ const Dashboard = () => {
     <div>
       <CustomNavbar /> {/* Incluir el Navbar */}
       <Container className="dashboard-container">
-        <h1 className="dashboard-title">Bienvenido al Dashboard</h1>
-        <p className="dashboard-subtitle">Has iniciado sesión correctamente.</p>
         
         {/* Outlet para renderizar los componentes hijos */}
         <Outlet />

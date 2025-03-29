@@ -22,17 +22,19 @@ public class AuthService {
 
     @Transactional(rollbackFor = {SQLException.class, Exception.class})
     public ResponseEntity<?> login(LoginDTO dto) {
+        // Buscamos el empleado por username y password
         Optional<Employee> found = employeeRepository.findByUsernameAndPassword(dto.getUsername(), dto.getPassword());
 
         if (found.isPresent()) {
             Employee employee = found.get();
-            // Formato: <id>.<username>.<rol> (sin prefijos/sufijos)
-            String token = String.format("%d.%s.%s",
+            // Generamos un token que incluye el id, username y rol del empleado
+            String token = String.format("tokenbearer.%d.%s.%s.voidtoken",
                     employee.getId(),
                     employee.getUsername(),
                     employee.getRole().getName());
             return customResponse.getOkResponse(token);
         } else {
+            // Si no se encuentra, devolvemos un error 404
             return customResponse.get400Response(404);
         }
     }

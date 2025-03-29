@@ -11,12 +11,11 @@ const CustomerForm = ({ show, onHide, onSubmit, initialData }) => {
     password: '',
   });
 
-  // Actualizar formData cuando initialData cambie
+  // Resetear o cargar datos al cambiar initialData
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
     } else {
-      // Si no hay initialData, resetear el formulario
       setFormData({
         name: '',
         surname: '',
@@ -26,18 +25,23 @@ const CustomerForm = ({ show, onHide, onSubmit, initialData }) => {
         password: '',
       });
     }
-  }, [initialData]);
+  }, [initialData, show]); // Agregamos show como dependencia
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-    onHide();
+  // En el handleSubmit del formulario, no incluyas customerId si no es necesario
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const dataToSubmit = {
+      ...formData,
+      customerId: undefined // No enviar el campo si no tiene valor
   };
+  onSubmit(dataToSubmit);
+  onHide();
+};
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -103,7 +107,7 @@ const CustomerForm = ({ show, onHide, onSubmit, initialData }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              required
+              required={!initialData} // No requerido para edición
             />
           </Form.Group>
           <Button type="submit" variant="dark">

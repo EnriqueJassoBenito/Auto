@@ -1,4 +1,0 @@
-package mx.edu.utez.automoviles.security.interceptors;
-
-public class CustomInterceptor {
-}

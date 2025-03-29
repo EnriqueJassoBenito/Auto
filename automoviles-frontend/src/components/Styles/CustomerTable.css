@@ -1,36 +1,140 @@
 /* CustomerTable.css */
+.table-responsive-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  animation: fadeIn 1s ease-in-out;
+  margin-top: 2rem; 
+}
+
+.search-container {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  border-left: 0;
+}
+
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  margin-top: 2rem;
+}
+
 .customer-table {
-    margin-top: 2rem;
-    animation: fadeIn 1s ease-in-out;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.customer-table th {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.customer-table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.customer-row {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.customer-row:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.action-button {
+  margin: 0 5px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.action-button:hover {
+  transform: scale(1.2);
+}
+
+.action-button:active {
+  transform: scale(0.9);
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  gap: 1rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-info {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.page-size-selector {
+  min-width: 120px;
+}
+
+.page-size-selector select {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Efectos responsivos */
+@media (max-width: 768px) {
+  .pagination-controls {
+    flex-direction: column;
+    gap: 0.5rem;
   }
   
-  .customer-row {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  .page-info {
+    order: -1;
+    margin-bottom: 0.5rem;
   }
   
-  .customer-row:hover {
-    transform: translateY(-5px); /* Efecto de levantar */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  .customer-table th, 
+  .customer-table td {
+    padding: 8px 10px;
+    font-size: 0.9rem;
   }
   
   .action-button {
-    margin: 0 5px;
-    transition: transform 0.3s ease, background-color 0.3s ease;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
   }
-  
-  .action-button:hover {
-    transform: scale(1.5); /* Efecto de agrandar */
-  }
-  
-  .action-button:active {
-    transform: scale(0.9); /* Efecto de presionar */
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+}
