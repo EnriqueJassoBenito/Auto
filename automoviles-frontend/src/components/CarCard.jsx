@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faUserCheck, faHandshake, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faEdit, 
+  faTrash, 
+  faUserCheck, 
+  faHandshake, 
+  faInfoCircle, 
+  faCalendarAlt, 
+  faCalendarCheck 
+} from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import CarAssignmentModal from './CarAssignmentModal';
 import CarDetailsModal from './CarDetailsModal';
@@ -57,6 +65,19 @@ const CarCard = ({ car, onEdit, onDelete, onRefresh, imageVersion }) => {
       case 'VENDIDO': return 'danger';
       default: return 'secondary';
     }
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return 'N/A';
+    const date = new Date(dateTimeString);
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return date.toLocaleDateString('es-MX', options);
   };
 
   const handleAssignClick = (e) => {
@@ -132,13 +153,27 @@ const CarCard = ({ car, onEdit, onDelete, onRefresh, imageVersion }) => {
             <Card.Subtitle className="mb-2 text-muted">
               {car.brand?.name || 'Marca no especificada'}
             </Card.Subtitle>
+            
+            <div className="date-info">
+              <small className="text-muted">
+                <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
+                Registro: {formatDateTime(car.registrationDate)}
+              </small>
+              
+              {car.status === 'VENDIDO' && car.saleDate && (
+                <small className="text-muted d-block mt-1">
+                  <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
+                  Venta: {formatDateTime(car.saleDate)}
+                </small>
+              )}
+            </div>
           </div>
           
           <div className="mt-auto">
             <div className="mb-2">
               <Badge bg="secondary" className="me-2 color-badge">{car.color}</Badge>
               <Badge bg="info" className="price-badge">
-                ${car.purchasePrice?.toLocaleString()}
+                ${car.purchasePrice?.toLocaleString('es-MX')}
               </Badge>
             </div>
             
@@ -281,6 +316,9 @@ const CarCard = ({ car, onEdit, onDelete, onRefresh, imageVersion }) => {
         .edit-btn:active, .delete-btn:active,
         .details-btn:active {
           transform: scale(0.9);
+        }
+        .date-info {
+          margin-bottom: 8px;
         }
         @keyframes fadeIn {
           from { opacity: 0; }

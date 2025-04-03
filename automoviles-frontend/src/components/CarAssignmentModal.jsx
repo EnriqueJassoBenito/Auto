@@ -6,11 +6,15 @@ import { faUserCheck, faHandshake, faCheckCircle } from '@fortawesome/free-solid
 
 const CarAssignmentModal = ({ show, onHide, car, refreshData, isSellingInitial }) => {
   const [customers, setCustomers] = useState([]);
+  const [services, setServices] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [selectedService, setSelectedService] = useState(null);
   const [isSelling, setIsSelling] = useState(isSellingInitial || false);
   const [error, setError] = useState(null);
   const [isAlreadyAssigned, setIsAlreadyAssigned] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
 
   const axiosInstance = axios.create({
     baseURL: 'http://localhost:8080/api',
@@ -38,12 +42,40 @@ const CarAssignmentModal = ({ show, onHide, car, refreshData, isSellingInitial }
       }
     };
 
+    const fetchServices = async () => {
+      try {
+        setIsLoadingServices(true);
+        const response = await axiosInstance.get('/services');
+        setServices(response.data);
+      } catch (err) {
+        setError('Error al cargar servicios');
+        console.error(err);
+      } finally {
+        setIsLoadingServices(false);
+      }
+    };
+
     if (show) {
       fetchCustomers();
+      fetchServices();
       setIsSelling(isSellingInitial || false);
       setError(null);
+      setSelectedServiceId('');
+      setSelectedService(null);
     }
   }, [show, car]);
+
+  const handleServiceChange = (e) => {
+    const serviceId = e.target.value;
+    setSelectedServiceId(serviceId);
+    
+    if (serviceId) {
+      const service = services.find(s => s.id == serviceId);
+      setSelectedService(service);
+    } else {
+      setSelectedService(null);
+    }
+  };
 
   const handleCompleteSale = async () => {
     setIsLoading(true);
@@ -104,37 +136,91 @@ const CarAssignmentModal = ({ show, onHide, car, refreshData, isSellingInitial }
           <Form.Label>Auto a {isAlreadyAssigned ? 'vender' : (isSelling ? 'vender' : 'asignar')}</Form.Label>
           <Form.Control 
             type="text" 
-            value={`${car.model} (${car.brand?.name})`} 
+            value={`${car.model} (${car.brand?.name}) - Precio: $${car.purchasePrice}`} 
             readOnly 
           />
         </Form.Group>
 
         {isAlreadyAssigned ? (
-          <Form.Group className="mb-3">
-            <Form.Label>Cliente asignado</Form.Label>
-            <Form.Control
-              type="text"
-              value={customers.find(c => c.id === car.customerId)?.name || 'Cliente no encontrado'}
-              readOnly
-            />
-          </Form.Group>
+          <>
+            <Form.Group className="mb-3">
+              <Form.Label>Cliente asignado</Form.Label>
+              <Form.Control
+                type="text"
+                value={customers.find(c => c.id === car.customerId)?.name || 'Cliente no encontrado'}
+                readOnly
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Selección de Servicio</Form.Label>
+              <Form.Select
+                value={selectedServiceId}
+                onChange={handleServiceChange}
+                disabled={isLoading || isLoadingServices}
+              >
+                <option value="">Seleccione un servicio adicional</option>
+                {services.map(service => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} - ${service.price}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            {selectedService && (
+              <div className="alert alert-info">
+                <strong>Servicio seleccionado:</strong> {selectedService.name} (${selectedService.price})<br />
+                <strong>Precio total con servicio:</strong> ${(parseFloat(car.purchasePrice) + parseFloat(selectedService.price)).toFixed(2)}
+              </div>
+            )}
+          </>
         ) : (
-          <Form.Group className="mb-3">
-            <Form.Label>Seleccionar Cliente</Form.Label>
-            <Form.Select
-              value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value)}
-              required={!isAlreadyAssigned}
-              disabled={isAlreadyAssigned || isLoading}
-            >
-              <option value="">Seleccione un cliente</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name} {customer.surname} - {customer.email}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
+          <>
+            <Form.Group className="mb-3">
+              <Form.Label>Seleccionar Cliente</Form.Label>
+              <Form.Select
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                required={!isAlreadyAssigned}
+                disabled={isAlreadyAssigned || isLoading}
+              >
+                <option value="">Seleccione un cliente</option>
+                {customers.map(customer => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name} {customer.surname} - {customer.email}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            {isSelling && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Selección de Servicio</Form.Label>
+                  <Form.Select
+                    value={selectedServiceId}
+                    onChange={handleServiceChange}
+                    disabled={isLoading || isLoadingServices}
+                  >
+                    <option value="">Seleccione un servicio adicional</option>
+                    {services.map(service => (
+                      <option key={service.id} value={service.id}>
+                        {service.name} - ${service.price}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                {selectedService && (
+                  <div className="alert alert-info">
+                    <strong>Servicio seleccionado:</strong> {selectedService.name} (${selectedService.price})<br />
+                    <strong>Precio total con servicio:</strong> ${(parseFloat(car.purchasePrice) + parseFloat(selectedService.price)).toFixed(2)}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
 
         {!isAlreadyAssigned && (
@@ -162,7 +248,9 @@ const CarAssignmentModal = ({ show, onHide, car, refreshData, isSellingInitial }
             {isLoading ? 'Procesando...' : (
               <>
                 <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
-                Marcar como Vendido
+                Marcar como Vendido por ${selectedService ? 
+                  (parseFloat(car.purchasePrice) + parseFloat(selectedService.price)).toFixed(2) : 
+                  car.purchasePrice}
               </>
             )}
           </Button>
@@ -173,7 +261,13 @@ const CarAssignmentModal = ({ show, onHide, car, refreshData, isSellingInitial }
             disabled={!selectedCustomerId || isLoading}
           >
             {isLoading ? 'Procesando...' : (
-              isSelling ? 'Confirmar Venta' : 'Asignar Cliente'
+              isSelling ? (
+                <>
+                  Confirmar Venta por ${selectedService ? 
+                    (parseFloat(car.purchasePrice) + parseFloat(selectedService.price)).toFixed(2) : 
+                    car.purchasePrice}
+                </>
+              ) : 'Asignar Cliente'
             )}
           </Button>
         )}
